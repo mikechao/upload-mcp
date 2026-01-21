@@ -84,10 +84,8 @@ function createServer(): McpServer {
   return server;
 }
 
-// Create Express app with MCP (allow ngrok hostname)
-const app = createMcpExpressApp({
-  allowedHosts: ['127.0.0.1', 'localhost', 'bertie-gnomonic-solomon.ngrok-free.dev'],
-});
+// Create Express app with MCP - bind to all interfaces for ngrok access
+const app = createMcpExpressApp({ host: '0.0.0.0' });
 
 // Enable CORS for all origins (required for ChatGPT to access via ngrok)
 app.use(cors({
