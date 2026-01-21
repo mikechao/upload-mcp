@@ -54,7 +54,9 @@ function FileUploadWidget() {
       console.log('[File Upload] Setting widget state...');
       if (window.openai.setWidgetState) {
         window.openai.setWidgetState({
-          modelContent: "Check out the latest updated image",
+          modelContent: {
+            imageIds: [uploadedFileId],
+          },
           privateContent: {},
           imageIds: [uploadedFileId],
         });
