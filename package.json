@@ -5,7 +5,7 @@
   "private": true,
   "description": "Example MCP server that exposes the Pizzaz demo tools using the official TypeScript SDK.",
   "scripts": {
-    "build:widget": "esbuild src/web/FileUpload.tsx --bundle --format=esm --outfile=src/web/dist/component.js --jsx=automatic",
+    "build:widget": "vite build --config src/web/vite.config.ts",
     "build": "pnpm build:widget && tsc",
     "dev": "pnpm build:widget && tsx src/server.ts",
     "start": "pnpm build && node dist/server.js"
@@ -21,11 +21,13 @@
     "@types/node": "^25.0.9",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
     "esbuild": "^0.27.2",
     "express": "^5.2.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }

@@ -3,23 +3,17 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import cors from 'cors';
 
 const MCP_PORT = 3000;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DIST_DIR = join(__dirname, '..', 'dist');
 
 // Map to store transports by session ID
 const transports: Record<string, StreamableHTTPServerTransport> = {};
-
-// Read the bundled widget component
-let widgetBundle: string;
-try {
-  widgetBundle = readFileSync(join(process.cwd(), 'src/web/dist/component.js'), 'utf-8');
-} catch (error) {
-  console.error('Failed to read widget bundle. Make sure to run "pnpm build:widget" first.');
-  process.exit(1);
-}
 
 // Create the MCP server
 function createServer(): McpServer {
@@ -27,6 +21,39 @@ function createServer(): McpServer {
     name: 'upload-mcp-server',
     version: '1.0.0',
   });
+
+  // Register the widget as a resource with ChatGPT-compatible MIME type
+  server.registerResource(
+    'file-upload-widget',
+    'ui://widget/file-upload.html',
+    { 
+      mimeType: 'text/html+skybridge', 
+      description: 'File Upload Widget' 
+    },
+    async () => {
+      const uiPath = join(DIST_DIR, 'ui/web/src/web/chatgpt-app.html');
+      try {
+        const html = readFileSync(uiPath, 'utf-8');
+        return {
+          contents: [{
+            uri: 'ui://widget/file-upload.html',
+            mimeType: 'text/html+skybridge',
+            text: html,
+          }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to load widget HTML from ${uiPath}: ${message}`);
+        return {
+          contents: [{
+            uri: 'ui://widget/file-upload.html',
+            mimeType: 'text/html+skybridge',
+            text: `<!doctype html><html><body><pre>Missing UI bundle at ${uiPath}: ${message}</pre></body></html>`,
+          }],
+        };
+      }
+    },
+  );
 
   // Register the upload_to_model tool
   server.registerTool(
@@ -36,6 +63,12 @@ function createServer(): McpServer {
       inputSchema: z.object({
         fileId: z.string().optional().describe('The file ID from a previous upload'),
       }),
+      annotations: {
+        openWorldHint: true,
+      },
+      _meta: {
+        'openai/outputTemplate': 'ui://widget/file-upload.html',
+      },
     },
     async ({ fileId }) => {
       // TODO: Add your post-upload processing logic here
@@ -48,7 +81,7 @@ function createServer(): McpServer {
       
       console.log('Received file upload:', fileId);
 
-      // Return the widget UI with embedded component
+      // Return simple text response - the widget is already registered via outputTemplate
       return {
         content: [
           {
@@ -58,31 +91,6 @@ function createServer(): McpServer {
               : 'Please select an image file to upload.',
           },
         ],
-        metadata: {
-          'openai/widgetDomain': 'https://chatgpt.com',
-          'openai/widgetCSP': {
-            connect_domains: ['https://chatgpt.com'],
-            resource_domains: ['https://*.oaistatic.com'],
-          },
-          'openai/component': {
-            type: 'inline',
-            template: `
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <meta charset="utf-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1">
-                </head>
-                <body>
-                  <div id="root"></div>
-                  <script type="module">
-                    ${widgetBundle}
-                  </script>
-                </body>
-              </html>
-            `,
-          },
-        },
       };
     }
   );
