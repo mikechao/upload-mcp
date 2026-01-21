@@ -59,10 +59,8 @@ function createServer(): McpServer {
   server.registerTool(
     'upload_to_model',
     {
-      description: 'Upload an image file (PNG, JPEG, or WebP) to the model',
-      inputSchema: z.object({
-        fileId: z.string().optional().describe('The file ID from a previous upload'),
-      }),
+      description: 'Displays the file chooser to upload an image file (PNG, JPEG, or WebP) to the model',
+      inputSchema: z.object({}),
       annotations: {
         openWorldHint: true,
       },
@@ -70,25 +68,13 @@ function createServer(): McpServer {
         'openai/outputTemplate': 'ui://widget/file-upload.html',
       },
     },
-    async ({ fileId }) => {
-      // TODO: Add your post-upload processing logic here
-      // This stub is called when the widget uploads a file
-      // You can:
-      // - Process the fileId
-      // - Store it in a database
-      // - Pass it to another service
-      // - Generate a response based on the uploaded file
-      
-      console.log('Received file upload:', fileId);
-
+    async () => {
       // Return simple text response - the widget is already registered via outputTemplate
       return {
         content: [
           {
             type: 'text' as const,
-            text: fileId 
-              ? `File received: ${fileId}. You can now process this file.`
-              : 'Please select an image file to upload.',
+            text: 'Please select an image file to upload using the widget below.',
           },
         ],
       };
