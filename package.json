@@ -1,0 +1,31 @@
+{
+  "name": "pizzaz-mcp-node",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Example MCP server that exposes the Pizzaz demo tools using the official TypeScript SDK.",
+  "scripts": {
+    "build:widget": "esbuild src/web/FileUpload.tsx --bundle --format=esm --outfile=src/web/dist/component.js --jsx=automatic",
+    "build": "pnpm build:widget && tsc",
+    "dev": "pnpm build:widget && tsx src/server.ts",
+    "start": "pnpm build && node dist/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@types/cors": "^2.8.19",
+    "cors": "^2.8.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.27.2",
+    "express": "^5.2.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}
