@@ -7,6 +7,8 @@ declare global {
     openai?: {
       uploadFile: (file: File) => Promise<{ fileId: string }>;
       callTool: (toolName: string, args: Record<string, any>) => Promise<void>;
+      setWidgetState: (state: any) => void;
+      sendFollowUpMessage: (options: { prompt: string }) => Promise<void>;
     };
   }
 }
@@ -23,37 +25,58 @@ function FileUploadWidget() {
     // Validate file type
     const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError(`Invalid file type. Please select PNG, JPEG, or WebP images only.`);
+      setError('Invalid file type. Please select PNG, JPEG, or WebP images only.');
       return;
     }
 
+    console.log('[File Upload] Selected file:', file.name, file.type, file.size);
     setError(null);
     setUploading(true);
 
     try {
+      console.log('[File Upload] Starting upload...');
+      
+      // Access directly from window.openai (functions are set at init, not via events)
       if (!window.openai?.uploadFile) {
         throw new Error('Upload API not available');
       }
 
-      const { fileId: uploadedFileId } = await window.openai.uploadFile(file);
+      console.log('[File Upload] Calling window.openai.uploadFile...');
+      const uploadResult = await window.openai.uploadFile(file);
+      console.log('[File Upload] Upload result:', uploadResult);
+      console.log('[File Upload] Upload result stringified:', JSON.stringify(uploadResult, null, 2));
+      
+      const uploadedFileId = uploadResult.fileId;
+      console.log('[File Upload] Extracted fileId:', uploadedFileId);
       setFileId(uploadedFileId);
 
-      // Call the tool with the uploaded fileId
-      // This allows the server to process the uploaded file
-      if (window.openai?.callTool) {
-        await window.openai.callTool('upload_to_model', { fileId: uploadedFileId });
+      // Set widget state with the uploaded image
+      console.log('[File Upload] Setting widget state...');
+      if (window.openai.setWidgetState) {
+        window.openai.setWidgetState({
+          modelContent: "Check out the latest updated image",
+          privateContent: {},
+          imageIds: [uploadedFileId],
+        });
+        console.log('[File Upload] Widget state set');
       }
 
-      // TODO: Add your post-upload processing here
-      // This is where you can handle the uploaded file
-      // Examples:
-      // - Send fileId to your backend for processing
-      // - Display a preview of the uploaded image
-      // - Trigger additional workflows
-      console.log('File uploaded successfully:', uploadedFileId);
+      // Wait for next frame to ensure state is set
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      // Send follow-up message to trigger analysis
+      console.log('[File Upload] Sending follow-up message...');
+      if (window.openai.sendFollowUpMessage) {
+        await window.openai.sendFollowUpMessage({
+          prompt: 'Please describe what you see.',
+        });
+        console.log('[File Upload] Follow-up message sent');
+      }
+
+      console.log('[File Upload] File uploaded successfully:', uploadedFileId);
       
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error('[File Upload] Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload file');
     } finally {
       setUploading(false);
