@@ -1,7 +1,6 @@
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,9 +10,6 @@ import cors from 'cors';
 const MCP_PORT = 3000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = join(__dirname, '..', 'dist');
-
-// Map to store transports by session ID
-const transports: Record<string, StreamableHTTPServerTransport> = {};
 
 // Create the MCP server
 function createServer(): McpServer {
@@ -95,40 +91,33 @@ app.use(cors({
   credentials: true,
 }));
 
-// Handle MCP requests
+// Handle MCP requests in stateless mode (like brave-search-mcp)
 app.post('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  // Create fresh server and transport for each request
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
 
-  let transport: StreamableHTTPServerTransport;
+  // Clean up when response ends
+  res.on('close', () => {
+    transport.close().catch(() => {});
+    server.close().catch(() => {});
+  });
 
-  if (sessionId && transports[sessionId]) {
-    // Reuse existing transport for this session
-    transport = transports[sessionId];
-  } else {
-    // Create a new transport for a new session
-    transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (sid) => {
-        transports[sid] = transport;
-        console.log('Session initialized:', sid);
-      },
-    });
-
-    // Set the onclose handler after creation
-    const closeHandler = () => {
-      const sid = transport.sessionId;
-      if (sid && transports[sid]) {
-        delete transports[sid];
-        console.log('Session closed:', sid);
-      }
-    };
-    transport.onclose = closeHandler;
-
-    const server = createServer();
+  try {
     await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } catch (error) {
+    console.error('MCP error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: { code: -32603, message: 'Internal server error' },
+        id: null,
+      });
+    }
   }
-
-  await transport.handleRequest(req, res, req.body);
 });
 
 // Start the server
