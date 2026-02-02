@@ -6,17 +6,20 @@ declare global {
   interface Window {
     openai?: {
       uploadFile: (file: File) => Promise<{ fileId: string }>;
+      getFileDownloadUrl?: (args: { fileId: string }) => Promise<{ downloadUrl: string }>;
       callTool: (toolName: string, args: Record<string, any>) => Promise<void>;
       setWidgetState: (state: any) => void;
-      sendFollowUpMessage: (options: { prompt: string }) => Promise<void>;
     };
   }
 }
 
 function FileUploadWidget() {
   const [fileId, setFileId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastWidgetState, setLastWidgetState] = useState<any>(null);
+  const [hostWidgetState, setHostWidgetState] = useState<any>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -53,26 +56,26 @@ function FileUploadWidget() {
       // Set widget state with the uploaded image
       console.log('[File Upload] Setting widget state...');
       if (window.openai.setWidgetState) {
-        window.openai.setWidgetState({
-          modelContent: {
-            imageIds: [uploadedFileId],
-          },
-          privateContent: {},
+        const widgetState = {
+          modelContent: 'User uploaded an image.',
+          privateContent: null,
           imageIds: [uploadedFileId],
-        });
+        };
+        window.openai.setWidgetState(widgetState);
+        setLastWidgetState(widgetState);
+        setHostWidgetState(window.openai.widgetState ?? null);
         console.log('[File Upload] Widget state set');
       }
 
-      // Wait for next frame to ensure state is set
-      await new Promise(resolve => requestAnimationFrame(resolve));
-
-      // Send follow-up message to trigger analysis
-      console.log('[File Upload] Sending follow-up message...');
-      if (window.openai.sendFollowUpMessage) {
-        await window.openai.sendFollowUpMessage({
-          prompt: 'Please describe what you see.',
-        });
-        console.log('[File Upload] Follow-up message sent');
+      if (window.openai.getFileDownloadUrl) {
+        try {
+          const { downloadUrl } = await window.openai.getFileDownloadUrl({ fileId: uploadedFileId });
+          setPreviewUrl(downloadUrl);
+          console.log('[File Upload] Preview URL resolved');
+        } catch (previewError) {
+          console.warn('[File Upload] Failed to resolve preview URL', previewError);
+          setPreviewUrl(null);
+        }
       }
 
       console.log('[File Upload] File uploaded successfully:', uploadedFileId);
@@ -110,6 +113,27 @@ function FileUploadWidget() {
         />
       </div>
 
+      <div style={{ 
+        fontSize: '12px', 
+        color: '#666', 
+        marginBottom: '12px' 
+      }}>
+        After uploading, ask a follow-up question about the image.
+      </div>
+
+      {previewUrl && (
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>
+            Preview
+          </div>
+          <img
+            src={previewUrl}
+            alt="Uploaded preview"
+            style={{ width: '100%', borderRadius: '6px', border: '1px solid #e0e0e0' }}
+          />
+        </div>
+      )}
+
       {uploading && (
         <div style={{ color: '#666', fontSize: '14px' }}>
           Uploading...
@@ -142,6 +166,34 @@ function FileUploadWidget() {
           <div style={{ fontSize: '12px', marginTop: '4px', color: '#666' }}>
             File ID: {fileId}
           </div>
+        </div>
+      )}
+
+      {lastWidgetState && (
+        <div style={{ 
+          fontSize: '11px', 
+          color: '#666', 
+          marginTop: '8px',
+          padding: '8px',
+          backgroundColor: '#f7f7f7',
+          borderRadius: '4px',
+          border: '1px solid #eee'
+        }}>
+          Widget state: {JSON.stringify(lastWidgetState)}
+        </div>
+      )}
+
+      {hostWidgetState && (
+        <div style={{ 
+          fontSize: '11px', 
+          color: '#666', 
+          marginTop: '8px',
+          padding: '8px',
+          backgroundColor: '#f7f7f7',
+          borderRadius: '4px',
+          border: '1px solid #eee'
+        }}>
+          Host widgetState: {JSON.stringify(hostWidgetState)}
         </div>
       )}
 
