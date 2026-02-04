@@ -58,7 +58,9 @@ function FileUploadWidget() {
       if (window.openai.setWidgetState) {
         const widgetState = {
           modelContent: 'User uploaded an image.',
-          privateContent: null,
+          privateContent: {
+            rawFileId: uploadedFileId,
+          },
           imageIds: [uploadedFileId],
         };
         window.openai.setWidgetState(widgetState);
