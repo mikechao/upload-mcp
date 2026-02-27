@@ -18,8 +18,6 @@ function FileUploadWidget() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastWidgetState, setLastWidgetState] = useState<any>(null);
-  const [hostWidgetState, setHostWidgetState] = useState<any>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -64,8 +62,6 @@ function FileUploadWidget() {
           imageIds: [uploadedFileId],
         };
         window.openai.setWidgetState(widgetState);
-        setLastWidgetState(widgetState);
-        setHostWidgetState(window.openai.widgetState ?? null);
         console.log('[File Upload] Widget state set');
       }
 
@@ -168,34 +164,6 @@ function FileUploadWidget() {
           <div style={{ fontSize: '12px', marginTop: '4px', color: '#666' }}>
             File ID: {fileId}
           </div>
-        </div>
-      )}
-
-      {lastWidgetState && (
-        <div style={{ 
-          fontSize: '11px', 
-          color: '#666', 
-          marginTop: '8px',
-          padding: '8px',
-          backgroundColor: '#f7f7f7',
-          borderRadius: '4px',
-          border: '1px solid #eee'
-        }}>
-          Widget state: {JSON.stringify(lastWidgetState)}
-        </div>
-      )}
-
-      {hostWidgetState && (
-        <div style={{ 
-          fontSize: '11px', 
-          color: '#666', 
-          marginTop: '8px',
-          padding: '8px',
-          backgroundColor: '#f7f7f7',
-          borderRadius: '4px',
-          border: '1px solid #eee'
-        }}>
-          Host widgetState: {JSON.stringify(hostWidgetState)}
         </div>
       )}
 
