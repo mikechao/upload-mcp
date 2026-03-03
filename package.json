@@ -1,9 +1,9 @@
 {
-  "name": "pizzaz-mcp-node",
+  "name": "file-upload-mcp-server",
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Example MCP server that exposes the Pizzaz demo tools using the official TypeScript SDK.",
+  "description": "A Model Context Protocol external app that demonstrates file upload functionality in MCP and ChatGPT.",
   "scripts": {
     "build:widget": "pnpm build:widget:chatgpt && pnpm build:widget:mcp",
     "build:widget:chatgpt": "WIDGET_ENTRY=chatgpt-app.html WIDGET_EMPTY_OUT_DIR=true vite build --config src/web/vite.config.ts",
