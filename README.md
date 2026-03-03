@@ -22,13 +22,16 @@ The tool registers two UI resources through metadata:
 ## Architecture Overview
 
 - Shared UI component: `src/web/FileUpload.tsx`
+  - Includes an editable textarea labeled `Additional Text to Send To Model`
+  - Default text: `User uploaded an image from the file upload widget.`
+  - Important: edit this text **before uploading** the image; the payload is created at upload time
 - ChatGPT adapter: `src/web/file-upload-chatgpt.tsx`
   - Uploads with `window.openai.uploadFile(file)`
   - Optionally resolves preview with `window.openai.getFileDownloadUrl({ fileId })`
-  - Sets widget state with `imageIds: [fileId]`
+  - Sets widget state with `modelContent` (from textarea) and `imageIds: [fileId]`
 - MCP App adapter: `src/web/file-upload-mcp.tsx`
   - Uses `useApp()` from `@modelcontextprotocol/ext-apps/react`
-  - Sends `updateModelContext({ content })` with text + image blocks
+  - Sends `updateModelContext({ content })` with textarea text + image blocks
   - Falls back to text-only context when the host rejects image payloads
 
 ## Supported Image Types and Normalization
@@ -70,10 +73,11 @@ Local MCP endpoint:
 1. Run `pnpm dev`
 2. Connect your host/client to `http://127.0.0.1:3000/mcp`
 3. Invoke `upload_to_model`
-4. Upload PNG, JPEG, and WebP files
+4. Edit `Additional Text to Send To Model` first (if needed), then upload PNG, JPEG, or WebP
 5. Confirm expected behavior:
    - Upload success feedback in widget
    - Preview rendering when available
+   - Text sent to model matches the textarea value at the moment of upload
    - MCP App mode fallback to text-only context if image content is rejected
 
 ## Project Structure
