@@ -1,6 +1,6 @@
 import type { ContentBlock } from '@modelcontextprotocol/sdk/types.js';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { FileUploadView, getFileTypeError } from './FileUpload';
 import { blobToBase64, normalizeBlobForModel } from './file-upload-mcp-utils';
 
@@ -17,15 +17,6 @@ export default function McpFileUploadWidget() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successDetail, setSuccessDetail] = useState<string | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-      }
-    };
-  }, []);
 
   const handleFileSelected = async (file: File) => {
     const fileTypeError = getFileTypeError(file);
@@ -43,18 +34,16 @@ export default function McpFileUploadWidget() {
     setSuccessMessage(null);
     setSuccessDetail(null);
     setUploading(true);
-
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-    }
-    objectUrlRef.current = URL.createObjectURL(file);
-    setPreviewUrl(objectUrlRef.current);
+    setPreviewUrl(null);
 
     const textOnlyContent: ContentBlock[] = [
       { type: 'text', text: 'User uploaded an image from the file upload widget.' },
     ];
 
     try {
+      const previewData = await blobToBase64(file);
+      setPreviewUrl(`data:${file.type};base64,${previewData}`);
+
       const { blob, mimeType } = await normalizeBlobForModel(file);
       const imageData = await blobToBase64(blob);
       const contentWithImage: ContentBlock[] = [
