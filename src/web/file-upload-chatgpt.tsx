@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { FileUploadView, getFileTypeError } from './FileUpload';
 
+const DEFAULT_ADDITIONAL_TEXT = 'User uploaded an image from the file upload widget.';
+
 declare global {
   interface Window {
     openai?: {
@@ -17,6 +19,7 @@ export default function ChatGptFileUploadWidget() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [additionalText, setAdditionalText] = useState(DEFAULT_ADDITIONAL_TEXT);
 
   const handleFileSelected = async (file: File) => {
     const fileTypeError = getFileTypeError(file);
@@ -37,11 +40,12 @@ export default function ChatGptFileUploadWidget() {
 
       const uploadResult = await window.openai.uploadFile(file);
       const uploadedFileId = uploadResult.fileId;
+      const resolvedAdditionalText = additionalText.trim() ? additionalText : DEFAULT_ADDITIONAL_TEXT;
       setFileId(uploadedFileId);
 
       if (window.openai.setWidgetState) {
         window.openai.setWidgetState({
-          modelContent: 'User uploaded an image.',
+          modelContent: resolvedAdditionalText,
           privateContent: {
             rawFileId: uploadedFileId,
           },
@@ -71,6 +75,8 @@ export default function ChatGptFileUploadWidget() {
       successMessage={fileId ? '✓ File uploaded successfully!' : null}
       successDetail={fileId ? `File ID: ${fileId}` : null}
       previewUrl={previewUrl}
+      additionalText={additionalText}
+      onAdditionalTextChange={setAdditionalText}
       onFileSelected={handleFileSelected}
     />
   );

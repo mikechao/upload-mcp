@@ -6,6 +6,8 @@ interface FileUploadViewProps {
   successMessage: string | null;
   successDetail: string | null;
   previewUrl: string | null;
+  additionalText: string;
+  onAdditionalTextChange: (value: string) => void;
   onFileSelected: (file: File) => Promise<void>;
 }
 
@@ -24,6 +26,8 @@ export function FileUploadView({
   successMessage,
   successDetail,
   previewUrl,
+  additionalText,
+  onAdditionalTextChange,
   onFileSelected,
 }: FileUploadViewProps) {
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -58,6 +62,41 @@ export function FileUploadView({
             borderRadius: '4px',
             cursor: uploading ? 'not-allowed' : 'pointer',
             width: '100%',
+          }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label
+          htmlFor="additional-text"
+          style={{
+            display: 'block',
+            fontSize: '13px',
+            fontWeight: 600,
+            marginBottom: '6px',
+            color: '#444',
+          }}
+        >
+          Additional Text to Send To Model
+        </label>
+        <textarea
+          id="additional-text"
+          value={additionalText}
+          onChange={(event) => {
+            onAdditionalTextChange(event.currentTarget.value);
+          }}
+          style={{
+            display: 'block',
+            width: '100%',
+            minHeight: '88px',
+            padding: '8px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            lineHeight: 1.4,
+            resize: 'vertical',
+            boxSizing: 'border-box',
           }}
         />
       </div>

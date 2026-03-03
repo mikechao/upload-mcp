@@ -5,6 +5,7 @@ import { FileUploadView, getFileTypeError } from './FileUpload';
 import { blobToBase64, normalizeBlobForModel } from './file-upload-mcp-utils';
 
 const APP_INFO = { name: 'Upload MCP Widget', version: '1.0.0' };
+const DEFAULT_ADDITIONAL_TEXT = 'User uploaded an image from the file upload widget.';
 
 export default function McpFileUploadWidget() {
   const { app, error: appError } = useApp({
@@ -17,6 +18,7 @@ export default function McpFileUploadWidget() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successDetail, setSuccessDetail] = useState<string | null>(null);
+  const [additionalText, setAdditionalText] = useState(DEFAULT_ADDITIONAL_TEXT);
 
   const handleFileSelected = async (file: File) => {
     const fileTypeError = getFileTypeError(file);
@@ -36,8 +38,9 @@ export default function McpFileUploadWidget() {
     setUploading(true);
     setPreviewUrl(null);
 
+    const resolvedAdditionalText = additionalText.trim() ? additionalText : DEFAULT_ADDITIONAL_TEXT;
     const textOnlyContent: ContentBlock[] = [
-      { type: 'text', text: 'User uploaded an image from the file upload widget.' },
+      { type: 'text', text: resolvedAdditionalText },
     ];
 
     try {
@@ -83,6 +86,8 @@ export default function McpFileUploadWidget() {
       successMessage={successMessage}
       successDetail={successDetail}
       previewUrl={previewUrl}
+      additionalText={additionalText}
+      onAdditionalTextChange={setAdditionalText}
       onFileSelected={handleFileSelected}
     />
   );
