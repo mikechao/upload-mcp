@@ -11,6 +11,7 @@
     "start": "pnpm build && node dist/server.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.1.2",
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@types/cors": "^2.8.19",
     "cors": "^2.8.5",
