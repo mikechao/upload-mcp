@@ -1,104 +1,55 @@
-import React, { useState } from 'react';
-import { createRoot } from 'react-dom/client';
+import type { ChangeEvent } from 'react';
 
-// Extend Window interface to include openai
-declare global {
-  interface Window {
-    openai?: {
-      uploadFile: (file: File) => Promise<{ fileId: string }>;
-      getFileDownloadUrl?: (args: { fileId: string }) => Promise<{ downloadUrl: string }>;
-      callTool: (toolName: string, args: Record<string, any>) => Promise<void>;
-      setWidgetState: (state: any) => void;
-    };
-  }
+interface FileUploadViewProps {
+  uploading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  successDetail: string | null;
+  previewUrl: string | null;
+  onFileSelected: (file: File) => Promise<void>;
 }
 
-function FileUploadWidget() {
-  const [fileId, setFileId] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+export function getFileTypeError(file: File): string | null {
+  if (ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
+    return null;
+  }
+  return 'Invalid file type. Please select PNG, JPEG, or WebP images only.';
+}
+
+export function FileUploadView({
+  uploading,
+  error,
+  successMessage,
+  successDetail,
+  previewUrl,
+  onFileSelected,
+}: FileUploadViewProps) {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Please select PNG, JPEG, or WebP images only.');
+    event.currentTarget.value = '';
+    if (!file) {
       return;
     }
-
-    console.log('[File Upload] Selected file:', file.name, file.type, file.size);
-    setError(null);
-    setUploading(true);
-
-    try {
-      console.log('[File Upload] Starting upload...');
-      
-      // Access directly from window.openai (functions are set at init, not via events)
-      if (!window.openai?.uploadFile) {
-        throw new Error('Upload API not available');
-      }
-
-      console.log('[File Upload] Calling window.openai.uploadFile...');
-      const uploadResult = await window.openai.uploadFile(file);
-      console.log('[File Upload] Upload result:', uploadResult);
-      console.log('[File Upload] Upload result stringified:', JSON.stringify(uploadResult, null, 2));
-      
-      const uploadedFileId = uploadResult.fileId;
-      console.log('[File Upload] Extracted fileId:', uploadedFileId);
-      setFileId(uploadedFileId);
-
-      // Set widget state with the uploaded image
-      console.log('[File Upload] Setting widget state...');
-      if (window.openai.setWidgetState) {
-        const widgetState = {
-          modelContent: 'User uploaded an image.',
-          privateContent: {
-            rawFileId: uploadedFileId,
-          },
-          imageIds: [uploadedFileId],
-        };
-        window.openai.setWidgetState(widgetState);
-        console.log('[File Upload] Widget state set');
-      }
-
-      if (window.openai.getFileDownloadUrl) {
-        try {
-          const { downloadUrl } = await window.openai.getFileDownloadUrl({ fileId: uploadedFileId });
-          setPreviewUrl(downloadUrl);
-          console.log('[File Upload] Preview URL resolved');
-        } catch (previewError) {
-          console.warn('[File Upload] Failed to resolve preview URL', previewError);
-          setPreviewUrl(null);
-        }
-      }
-
-      console.log('[File Upload] File uploaded successfully:', uploadedFileId);
-      
-    } catch (err) {
-      console.error('[File Upload] Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload file');
-    } finally {
-      setUploading(false);
-    }
+    await onFileSelected(file);
   };
 
   return (
-    <div style={{ 
-      padding: '20px', 
+    <div style={{
+      padding: '20px',
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      maxWidth: '400px'
+      maxWidth: '400px',
     }}>
       <h2 style={{ marginTop: 0, fontSize: '18px', fontWeight: 600 }}>Upload Image</h2>
-      
+
       <div style={{ marginBottom: '16px' }}>
         <input
           type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleFileChange}
+          accept={ACCEPTED_IMAGE_TYPES.join(',')}
+          onChange={(event) => {
+            void handleFileChange(event);
+          }}
           disabled={uploading}
           style={{
             display: 'block',
@@ -106,15 +57,15 @@ function FileUploadWidget() {
             border: '1px solid #ccc',
             borderRadius: '4px',
             cursor: uploading ? 'not-allowed' : 'pointer',
-            width: '100%'
+            width: '100%',
           }}
         />
       </div>
 
-      <div style={{ 
-        fontSize: '12px', 
-        color: '#666', 
-        marginBottom: '12px' 
+      <div style={{
+        fontSize: '12px',
+        color: '#666',
+        marginBottom: '12px',
       }}>
         After uploading, ask a follow-up question about the image.
       </div>
@@ -139,50 +90,45 @@ function FileUploadWidget() {
       )}
 
       {error && (
-        <div style={{ 
-          color: '#d32f2f', 
+        <div style={{
+          color: '#d32f2f',
           fontSize: '14px',
           padding: '8px',
           backgroundColor: '#ffebee',
           borderRadius: '4px',
-          marginTop: '8px'
+          marginTop: '8px',
         }}>
           {error}
         </div>
       )}
 
-      {fileId && (
-        <div style={{ 
-          color: '#2e7d32', 
+      {successMessage && (
+        <div style={{
+          color: '#2e7d32',
           fontSize: '14px',
           padding: '8px',
           backgroundColor: '#e8f5e9',
           borderRadius: '4px',
-          marginTop: '8px'
+          marginTop: '8px',
         }}>
-          ✓ File uploaded successfully!
-          <div style={{ fontSize: '12px', marginTop: '4px', color: '#666' }}>
-            File ID: {fileId}
-          </div>
+          {successMessage}
+          {successDetail && (
+            <div style={{ fontSize: '12px', marginTop: '4px', color: '#666' }}>
+              {successDetail}
+            </div>
+          )}
         </div>
       )}
 
-      <div style={{ 
-        fontSize: '12px', 
-        color: '#666', 
+      <div style={{
+        fontSize: '12px',
+        color: '#666',
         marginTop: '12px',
         paddingTop: '12px',
-        borderTop: '1px solid #eee'
+        borderTop: '1px solid #eee',
       }}>
         Supported formats: PNG, JPEG, WebP
       </div>
     </div>
   );
-}
-
-// Mount the component when the script loads
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  const root = createRoot(rootElement);
-  root.render(<FileUploadWidget />);
 }
