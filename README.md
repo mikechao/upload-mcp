@@ -1,6 +1,7 @@
 # Upload MCP Server
 
-A ChatGPT App with an MCP server that provides a file upload widget for images.
+A MCP App that provides a file upload widget for images.
+Supports both OpenAI Apps SDK and the MCP Apps SDK.
 
 ## Features
 
