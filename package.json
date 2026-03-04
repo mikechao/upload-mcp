@@ -10,7 +10,7 @@
     "build:widget:mcp": "WIDGET_ENTRY=mcp-app.html WIDGET_EMPTY_OUT_DIR=false vite build --config src/web/vite.config.ts",
     "build": "pnpm build:widget && tsc",
     "dev": "pnpm build:widget && tsx src/server.ts",
-    "start": "pnpm build && node dist/server.js"
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.1.2",

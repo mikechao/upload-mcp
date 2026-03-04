@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import cors from 'cors';
 
-const MCP_PORT = 3000;
+const MCP_PORT = Number(process.env.PORT ?? 3000);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = join(__dirname, '..', 'dist');
 const CHATGPT_WIDGET_URI = 'ui://widget/file-upload-chatgpt.html';
@@ -149,7 +149,7 @@ app.post('/mcp', async (req, res) => {
 });
 
 // Start the server
-app.listen(MCP_PORT, '127.0.0.1', () => {
-  console.log(`MCP server listening on http://127.0.0.1:${MCP_PORT}/mcp`);
+app.listen(MCP_PORT, '0.0.0.0', () => {
+  console.log(`MCP server listening on http://0.0.0.0:${MCP_PORT}/mcp`);
   console.log('Ready to accept connections from ChatGPT');
 });
